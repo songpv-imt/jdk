@@ -2964,15 +2964,15 @@ void TemplateTable::jvmti_post_field_mod(Register cache,
 void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteControl rc) {
   transition(vtos, vtos);
 
-  const Register obj           = Z_tmp_1; // <- We can't use Z_R1, why ? because pop_ptr is that register.
-                                          // need to try out Z_R0 :-)
+  const Register obj           = Z_ARG5;
   const Register off           = Z_tmp_2;
-  const Register cache         = Z_tmp_1;
+  const Register cache         = Z_ARG5;
   const Register index         = Z_tmp_2;
-  const Register flags         = Z_R1_scratch; // non-volatile reg required, but none available.
+  const Register fieldAddr     = Z_tmp_2;      // contains obj and off combined. Could be any address register.
+  const Register flags         = Z_tmp_1;      // preserves flags value till the end, for z_fencing
   const Register br_tab        = Z_R1_scratch;
   const Register tos_state     = Z_ARG4;
-  const Register bc_reg        = Z_tmp_1;
+  const Register bc_reg        = Z_tmp_2;
   const Register patch_tmp     = Z_ARG4;
   const Register oopStore_tmp1 = Z_R1_scratch; // tmp1 or tmp2 must be non-volatile reg
   const Register oopStore_tmp2 = Z_ARG5;       // tmp1 or tmp2 must be non-volatile reg
@@ -2984,20 +2984,32 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   // Register usage and life range
   //
   //  cache, index: short-lived. Their life ends after load_resolved_field_entry.
-  //  obj (overwrites cache): long-lived. Used in branch table entries.
-  //  off (overwrites index): long-lived. Used in branch table entries.
-  //  flags: long-lived. Has to survive until the end to determine volatility.
-  //  br_tab: short-lived. Only used to address branch table, and for verification
-  //          in BTB_BEGIN macro.
-  //  tos_state: short-lived. Only used to index the branch table entry.
-  //  bc_reg: short-lived. Used as work register in patch_bytecode.
+  //  obj (overwrites cache): very short-lived, Combined with off immediately.
+  //  off (overwrites index): long-lived, Used in branch table entries.
+  //  flags: long-lived, Has to survive until the end to determine volatility.
+  //  br_tab: short-lived, Only used to address branch table, and for verification in BTB_BEGIN macro.
+  //  tos_state: short-live, Only used to index the branch table entry.
+  //  bc_reg: short-lived, Used as work register in patch_bytecode.
   //
   resolve_cache_and_index_for_field(byte_no, cache, index);
   jvmti_post_field_mod(cache, index, is_static);
   load_resolved_field_entry(obj, cache, tos_state, off, flags, is_static);
 
   // Displacement is 0. No need to care about limited displacement range.
-  const Address field(obj, off);
+  const Address field(fieldAddr);
+  __ lgr_if_needed(fieldAddr, off);
+
+  /*
+   * In the static case, we can calculate the final field address easily.
+   * Do so to occupy only one non-volatile register
+   * ---------------------
+   * In the non-static case, we preset fieldAddr with the field offset.
+   * The object address is available only later. It is popped from stack.
+   * see pop_and_check_object(obj);
+   */
+  if (is_static) {
+    __ z_agr(fieldAddr, obj);
+  }
 
   Label is_Byte, is_Bool,  is_Int,    is_Short, is_Char,
         is_Long, is_Float, is_Object, is_Double;
@@ -3036,12 +3048,8 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   BTB_BEGIN(is_Byte, bsize, "putfield_or_static:is_Byte");
   __ pop(btos);
   if (!is_static) {
-    // pop_and_check_object(obj);
-    z_lg(Z_R1_scratch, Interpreter::expr_offset_in_bytes(0), Z_esp);
-    TemplateTable::pop(); // see line 1301
-    __ null_check(Z_R1_scratch);  // for field access must check obj.
-    __ verify_oop(Z_R1_scratch);
-    debug_only(verify_esp(Z_esp, Z_R1_scratch));
+    pop_and_check_object(obj);
+    __ z_agr(fieldAddr, obj);
   }
   __ z_stc(Z_tos, field);
   if (do_rewrite) {
@@ -3055,6 +3063,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ pop(ztos);
   if (!is_static) {
     pop_and_check_object(obj);
+    __ z_agr(fieldAddr, obj);
   }
   __ z_nilf(Z_tos, 0x1);
   __ z_stc(Z_tos, field);
@@ -3069,6 +3078,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ pop(ctos);
   if (!is_static) {
     pop_and_check_object(obj);
+    __ z_agr(fieldAddr, obj);
   }
   __ z_sth(Z_tos, field);
   if (do_rewrite) {
@@ -3082,6 +3092,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ pop(stos);
   if (!is_static) {
     pop_and_check_object(obj);
+    __ z_agr(fieldAddr, obj);
   }
   __ z_sth(Z_tos, field);
   if (do_rewrite) {
@@ -3095,6 +3106,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ pop(itos);
   if (!is_static) {
     pop_and_check_object(obj);
+    __ z_agr(fieldAddr, obj);
   }
   __ reg2mem_opt(Z_tos, field, false);
   if (do_rewrite) {
@@ -3108,6 +3120,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ pop(ltos);
   if (!is_static) {
     pop_and_check_object(obj);
+    __ z_agr(fieldAddr, obj);
   }
   __ reg2mem_opt(Z_tos, field);
   if (do_rewrite) {
@@ -3121,6 +3134,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ pop(ftos);
   if (!is_static) {
     pop_and_check_object(obj);
+    __ z_agr(fieldAddr, obj);
   }
   __ freg2mem_opt(Z_ftos, field, false);
   if (do_rewrite) {
@@ -3134,6 +3148,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ pop(dtos);
   if (!is_static) {
     pop_and_check_object(obj);
+    __ z_agr(fieldAddr, obj);
   }
   __ freg2mem_opt(Z_ftos, field);
   if (do_rewrite) {
@@ -3198,6 +3213,7 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
     __ pop(atos);
     if (!is_static) {
       pop_and_check_object(obj);
+      __ z_agr(fieldAddr, obj);
     }
     // Store into the field
     do_oop_store(_masm, field, Z_tos,
