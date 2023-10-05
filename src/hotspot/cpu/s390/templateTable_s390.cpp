@@ -3016,29 +3016,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   const unsigned int bsize = is_static ? BTB_MINSIZE*1 : BTB_MINSIZE*8;
 #endif
 
-  /*
-   * TODO: PLEASE REMOVE ME, Register required below this:
-   * br_tab | tos_state |
-   * obj   | bc_reg | patch_tmp |  <- ctos
-   * obj   | bc_reg | patch_tmp |  <- stos
-   * obj   | bc_reg | patch_tmp |  <- itos
-   * obj   | bc_reg | patch_tmp |  <- ltos
-   * obj   | bc_reg | patch_tmp |  <- ftos
-   * obj   | bc_reg | patch_tmp |  <- dtos
-   * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp <- atos
-   * flags <- volatility check
-   * Z_R1 (But we need to switch to non-volatile register)
-   *
-   * Z_R1   | Z_R4 |
-   * Z_R10 | Z_R10  | Z_R5 <- ctos
-   * Z_R10 | Z_R10  | Z_R5 <- stos
-   * Z_R10 | Z_R10  | Z_R5 <- itos
-   * Z_R10 | Z_R10  | Z_R5 <- ltos
-   * Z_R10 | Z_R10  | Z_R5 <- ftos
-   * Z_R10 | Z_R10  | Z_R5 <- dtos
-   * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5 <- atos
-   * Z_R1 <- change required here, volatility check
-   */
   // Calculate address of branch table entry and branch there.
   {
     const int bit_shift = exact_log2(bsize); // Size of each branch table entry.
@@ -3052,31 +3029,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
     }
   }
 
-  /*
-   * TODO: PLEASE REMOVE ME, Register required below this:
-   * obj   | bc_reg | patch_tmp |  <- btos
-   * obj   | bc_reg | patch_tmp |  <- ztos
-   * obj   | bc_reg | patch_tmp |  <- ctos
-   * obj   | bc_reg | patch_tmp |  <- stos
-   * obj   | bc_reg | patch_tmp |  <- itos
-   * obj   | bc_reg | patch_tmp |  <- ltos
-   * obj   | bc_reg | patch_tmp |  <- ftos
-   * obj   | bc_reg | patch_tmp |  <- dtos
-   * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp <- atos
-   * flags <- volatility check
-   * Z_R1 (But we need to switch to non-volatile register)
-   *
-   * Z_R10 | Z_R10  | Z_R5 <- btos
-   * Z_R10 | Z_R10  | Z_R5 <- ztos
-   * Z_R10 | Z_R10  | Z_R5 <- ctos
-   * Z_R10 | Z_R10  | Z_R5 <- stos
-   * Z_R10 | Z_R10  | Z_R5 <- itos
-   * Z_R10 | Z_R10  | Z_R5 <- ltos
-   * Z_R10 | Z_R10  | Z_R5 <- ftos
-   * Z_R10 | Z_R10  | Z_R5 <- dtos
-   * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5 <- atos
-   * Z_R1 <- change required here, volatility check
-   */
   __ align_address(bsize);
   BIND(branchTable);
 
@@ -3112,27 +3064,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ z_bru(Done);
   BTB_END(is_Bool, bsize, "putfield_or_static:is_Bool");
 
-  /*
-   * TODO: PLEASE REMOVE ME, Register required below this:
-   * obj   | bc_reg | patch_tmp |  <- ctos
-   * obj   | bc_reg | patch_tmp |  <- stos
-   * obj   | bc_reg | patch_tmp |  <- itos
-   * obj   | bc_reg | patch_tmp |  <- ltos
-   * obj   | bc_reg | patch_tmp |  <- ftos
-   * obj   | bc_reg | patch_tmp |  <- dtos
-   * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp <- atos
-   * flags <- volatility check
-   * Z_R1 (But we need to switch to non-volatile register)
-   *
-   * Z_R10 | Z_R10  | Z_R5 <- ctos
-   * Z_R10 | Z_R10  | Z_R5 <- stos
-   * Z_R10 | Z_R10  | Z_R5 <- itos
-   * Z_R10 | Z_R10  | Z_R5 <- ltos
-   * Z_R10 | Z_R10  | Z_R5 <- ftos
-   * Z_R10 | Z_R10  | Z_R5 <- dtos
-   * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5 <- atos
-   * Z_R1 <- change required here, volatility check
-   */
   // ctos
   BTB_BEGIN(is_Char, bsize, "putfield_or_static:is_Char");
   __ pop(ctos);
@@ -3146,25 +3077,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ z_bru(Done);
   BTB_END(is_Char, bsize, "putfield_or_static:is_Char");
 
-  /*
-   * TODO: PLEASE REMOVE ME, Register required below this:
-   * obj   | bc_reg | patch_tmp |  <- stos
-   * obj   | bc_reg | patch_tmp |  <- itos
-   * obj   | bc_reg | patch_tmp |  <- ltos
-   * obj   | bc_reg | patch_tmp |  <- ftos
-   * obj   | bc_reg | patch_tmp |  <- dtos
-   * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp <- atos
-   * flags <- volatility check
-   * Z_R1 (But we need to switch to non-volatile register)
-   *
-   * Z_R10 | Z_R10  | Z_R5 <- stos
-   * Z_R10 | Z_R10  | Z_R5 <- itos
-   * Z_R10 | Z_R10  | Z_R5 <- ltos
-   * Z_R10 | Z_R10  | Z_R5 <- ftos
-   * Z_R10 | Z_R10  | Z_R5 <- dtos
-   * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5 <- atos
-   * Z_R1 <- change required here, volatility check
-   */
   // stos
   BTB_BEGIN(is_Short, bsize, "putfield_or_static:is_Short");
   __ pop(stos);
@@ -3178,23 +3090,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ z_bru(Done);
   BTB_END(is_Short, bsize, "putfield_or_static:is_Short");
 
-  /*
-   * TODO: PLEASE REMOVE ME, Register required below this:
-   * obj   | bc_reg | patch_tmp |  <- itos
-   * obj   | bc_reg | patch_tmp |  <- ltos
-   * obj   | bc_reg | patch_tmp |  <- ftos
-   * obj   | bc_reg | patch_tmp |  <- dtos
-   * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp <- atos
-   * flags <- volatility check
-   * Z_R1 (But we need to switch to non-volatile register)
-   *
-   * Z_R10 | Z_R10  | Z_R5 <- itos
-   * Z_R10 | Z_R10  | Z_R5 <- ltos
-   * Z_R10 | Z_R10  | Z_R5 <- ftos
-   * Z_R10 | Z_R10  | Z_R5 <- dtos
-   * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5 <- atos
-   * Z_R1 <- change required here, volatility check
-   */
   // itos
   BTB_BEGIN(is_Int, bsize, "putfield_or_static:is_Int");
   __ pop(itos);
@@ -3208,21 +3103,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ z_bru(Done);
   BTB_END(is_Int, bsize, "putfield_or_static:is_Int");
 
-  /*
-   * TODO: PLEASE REMOVE ME, Register required below this:
-   * obj   | bc_reg | patch_tmp |  <- ltos
-   * obj   | bc_reg | patch_tmp |  <- ftos
-   * obj   | bc_reg | patch_tmp |  <- dtos
-   * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp <- atos
-   * flags <- volatility check
-   * Z_R1 (But we need to switch to non-volatile register)
-   *
-   * Z_R10 | Z_R10  | Z_R5 <- ltos
-   * Z_R10 | Z_R10  | Z_R5 <- ftos
-   * Z_R10 | Z_R10  | Z_R5 <- dtos
-   * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5 <- atos
-   * Z_R1 <- change required here, volatility check
-   */
   // ltos
   BTB_BEGIN(is_Long, bsize, "putfield_or_static:is_Long");
   __ pop(ltos);
@@ -3236,19 +3116,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ z_bru(Done);
   BTB_END(is_Long, bsize, "putfield_or_static:is_Long");
 
-  /*
-   * TODO: PLEASE REMOVE ME, Register required below this:
-   * obj   | bc_reg | patch_tmp |  <- ftos
-   * obj   | bc_reg | patch_tmp |  <- dtos
-   * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp <- atos
-   * flags <- volatility check
-   * Z_R1 (But we need to switch to non-volatile register)
-   *
-   * Z_R10 | Z_R10  | Z_R5 <- ftos
-   * Z_R10 | Z_R10  | Z_R5 <- dtos
-   * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5 <- atos
-   * Z_R1 <- change required here, volatility check
-   */
   // ftos
   BTB_BEGIN(is_Float, bsize, "putfield_or_static:is_Float");
   __ pop(ftos);
@@ -3262,17 +3129,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
   __ z_bru(Done);
   BTB_END(is_Float, bsize, "putfield_or_static:is_Float");
 
-  /*
-   * TODO: PLEASE REMOVE ME, Register required below this:
-   * obj   | bc_reg | patch_tmp |
-   * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp
-   * flags
-   * Z_R1 (But we need to switch to non-volatile register)
-   *
-   * Z_R10 | Z_R10  | Z_R5
-   * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5
-   * Z_R1 <- change required here
-   */
   // dtos
   BTB_BEGIN(is_Double, bsize, "putfield_or_static:is_Double");
   __ pop(dtos);
@@ -3330,15 +3186,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
     unsigned int e_off = __ offset();
   }
 
- /*
-  * TODO: PLEASE REMOVE ME, Register required below this:
-  * obj   | Z_tos | oopStore_tmp1 | oopStore_tmp2 | oopStore_tmp3 | bc_reg | patch_tmp
-  * flags
-  * Z_R1 (But we need to switch to non-volatile register)
-  *
-  * Z_R10 | Z_R2  | Z_R1          | (Z_ARG5)Z_R6  | Z_R0          | Z_R10  | Z_R5
-  * Z_R1 <- change required here
-  */
   __ align_address(64);
   BIND(atosHandler);  // Oops are really complicated to handle.
                       // There is a lot of code generated.
