@@ -103,7 +103,7 @@ public class SelectNewItemTest implements ItemListener, WindowListener {
             int selectedIndex = theChoice.getSelectedIndex();
             Dimension size = theChoice.getSize();
 
-            robot.mouseMove(loc.x + size.width - 10, loc.y + size.height / 2);
+            robot.mouseMove(loc.x + size.width / 2, loc.y + size.height / 2);
 
             robot.setAutoDelay(250);
             robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
@@ -126,7 +126,7 @@ public class SelectNewItemTest implements ItemListener, WindowListener {
             //now click on the same item and make sure that item event is
             //not generated.
             robot.delay(1000);
-            robot.mouseMove(loc.x + size.width - 10, loc.y + size.height / 2);
+            robot.mouseMove(loc.x + size.width / 2, loc.y + size.height / 2);
 
             robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
             //Make sure that the popup menu scrolls back to show the index from
